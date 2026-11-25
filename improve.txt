@@ -1,0 +1,1265 @@
+# MOTIONFORGE — MASTER PROJECT EVOLUTION PROMPT
+
+## PROJECT OBJECTIVE
+
+Upgrade the existing MotionForge application into a powerful, professional, modern slider, carousel, motion, and interactive presentation builder.
+
+MotionForge is an existing React + TypeScript project.
+
+This is a comprehensive improvement and expansion of the existing project, not a replacement or a complete rewrite.
+
+The objective is to significantly improve the current carousel engine, motion system, 3D capabilities, editor experience, mobile usability, responsive architecture, presets, and export quality while preserving the existing features that already work.
+
+The application must remain a carousel and slider creation tool. Do not turn it into an unrelated animation editor.
+
+The final product should feel like a professional visual creation studio capable of producing advanced website carousels, hero sliders, product showcases, interactive galleries, editorial sliders, 3D presentations, and modern motion-based website components.
+
+---
+
+# 1. FIRST: AUDIT THE EXISTING PROJECT
+
+Before changing code, thoroughly inspect the current repository.
+
+Understand the existing:
+
+- Project architecture
+- React components
+- TypeScript models
+- State management
+- Preview engine
+- Carousel layouts
+- Motion system
+- Transition system
+- Preset system
+- Slide editor
+- Image handling
+- Navigation controls
+- Responsive behavior
+- Mobile editor
+- Exporters
+- CSS architecture
+- Animation calculations
+- Event listeners
+- Performance bottlenecks
+
+Inspect the actual implementation rather than making assumptions.
+
+Identify:
+
+1. What already works correctly.
+2. What is partially implemented.
+3. What is limited or poorly designed.
+4. What is duplicated.
+5. What is missing.
+6. What causes performance problems.
+7. Where preview and export behavior differ.
+8. Which improvements can be implemented without breaking existing architecture.
+
+Create an implementation plan based on the actual code.
+
+Do not unnecessarily replace working systems.
+
+Preserve existing functionality, configuration, projects, presets, and compatibility wherever possible.
+
+---
+
+# 2. CAROUSEL ENGINE UPGRADE
+
+Improve the existing carousel engine to support more sophisticated behavior, layouts, movement, positioning, and interactions.
+
+The carousel engine should not be restricted to a small collection of hardcoded transform combinations.
+
+Create a flexible system capable of supporting different carousel structures and movement behavior.
+
+## Existing layouts
+
+Preserve and improve existing layouts, including:
+
+- Standard
+- Hero
+- Multi-card
+- Centered
+- Coverflow
+- Stack
+- Vertical
+- Marquee
+
+Do not remove or regress any existing layout.
+
+## Additional layout possibilities
+
+Evaluate and implement appropriate new layouts:
+
+- Spotlight
+- Focus gallery
+- Split showcase
+- Filmstrip
+- Accordion slider
+- Grid slider
+- Wheel
+- Circular gallery
+- Fan
+- Layered gallery
+- Perspective gallery
+- Fullscreen editorial
+- Product showcase
+- Infinite deck
+- Parallax showcase
+
+Each layout must have its own meaningful behavior rather than simply changing styling.
+
+Layouts should support relevant configuration for:
+
+- Position
+- Scale
+- Spacing
+- Alignment
+- Visible items
+- Active item
+- Depth
+- Direction
+- Responsive behavior
+
+Avoid adding layouts that are only superficial variations of existing ones.
+
+---
+
+# 3. ADVANCED MOTION ENGINE
+
+Upgrade the existing motion engine while keeping it focused on carousel and slider behavior.
+
+Motion should be configurable independently of layout wherever technically appropriate.
+
+## Motion dimensions
+
+Implement a more flexible motion configuration supporting:
+
+- Translation X
+- Translation Y
+- Translation Z
+- Scale
+- Rotation X
+- Rotation Y
+- Rotation Z
+- Opacity
+- Blur
+- Perspective
+- Depth
+- Skew
+- Transform origin
+- Overshoot
+- Velocity
+- Acceleration
+- Stagger
+- Delay
+- Duration
+- Direction
+- Intensity
+
+Not every layout needs every parameter.
+
+Only expose parameters that are meaningful for the selected layout and transition.
+
+## Motion behavior
+
+Support more sophisticated movement:
+
+- Smooth directional transitions
+- Multi-axis motion
+- Depth transitions
+- Layered motion
+- Overshoot
+- Elastic motion
+- Spring motion
+- Momentum
+- Inertia
+- Acceleration and deceleration
+- Staggered motion
+- Continuous motion
+- Looping motion
+- Motion-based emphasis
+- Active-slide focus
+- Exit and entrance choreography
+
+## Motion configuration architecture
+
+Avoid hardcoded motion behavior scattered across layout components.
+
+Create a reusable motion configuration and calculation architecture.
+
+Where possible, separate:
+
+- Motion definition
+- Transition definition
+- Layout geometry
+- Active-slide state
+- Timing
+- Easing
+- Interaction
+- Rendering
+
+Allow layouts and transitions to use reusable motion primitives.
+
+Avoid creating a massive unnecessary animation framework.
+
+Keep the architecture efficient, understandable, maintainable, and appropriate for a carousel builder.
+
+---
+
+# 4. ADVANCED TRANSITION SYSTEM
+
+Expand the transition library beyond the current limited transition types.
+
+## Transition categories
+
+### Directional
+- Slide left
+- Slide right
+- Slide up
+- Slide down
+- Diagonal
+- Custom direction
+
+### Transform
+- Zoom in
+- Zoom out
+- Zoom through
+- Rotate
+- Flip
+- Tilt
+- Scale reveal
+- Depth push
+- Depth pull
+
+### Reveal
+- Fade
+- Wipe
+- Diagonal wipe
+- Corner reveal
+- Circular reveal
+- Iris
+- Split reveal
+- Curtain
+- Blinds
+- Mask reveal
+
+### Cinematic
+- Motion blur
+- Focus shift
+- Depth transition
+- Perspective movement
+- Parallax reveal
+- Multi-layer movement
+
+### Experimental
+- Wave
+- Liquid
+- Ripple
+- Distortion
+- Morph-inspired transitions
+- Organic reveals
+
+Implement transitions that can genuinely be supported by the rendering and export architecture.
+
+Do not create controls that are visually present but have no functional effect.
+
+## Transition configuration
+
+Where appropriate, support:
+
+- Duration
+- Delay
+- Direction
+- Intensity
+- Easing
+- Scale
+- Rotation
+- Depth
+- Mask
+- Origin
+- Overshoot
+- Stagger
+
+Allow incoming and outgoing slides to have different transition behavior when supported.
+
+---
+
+# 5. DEDICATED 3D CAROUSEL ENGINE
+
+Implement a dedicated 3D carousel system.
+
+Do not treat 3D carousel as simply adding rotateY to the existing Coverflow.
+
+Create a reusable spatial engine with geometry, positioning, perspective, depth, rotation, camera, interaction, and rendering responsibilities.
+
+## 3D formations
+
+Implement appropriate formations such as:
+
+- Ring
+- Circular carousel
+- Cylinder
+- Sphere
+- Helix
+- Spiral
+- Tunnel
+- Wave
+- Fan
+- Orbit
+- Multi-orbit
+
+Each formation must have meaningful geometry and positioning calculations.
+
+## 3D geometry controls
+
+Support:
+
+- Radius
+- Horizontal radius
+- Vertical radius
+- Card width
+- Card height
+- Card spacing
+- Angular spacing
+- Depth
+- Elevation
+- Ring size
+- Formation scale
+- Distribution
+- Orientation
+
+## Camera and perspective
+
+Support:
+
+- Perspective
+- Camera distance
+- Focal depth
+- Field of view where appropriate
+- Perspective intensity
+- Camera position
+- Camera rotation
+- X-axis tilt
+- Y-axis tilt
+- Z-axis rotation
+
+## Card transformations
+
+Allow configuration of:
+
+- Position X
+- Position Y
+- Position Z
+- Rotation X
+- Rotation Y
+- Rotation Z
+- Scale
+- Opacity
+- Elevation
+- Facing direction
+- Depth offset
+
+## 3D interaction
+
+Implement:
+
+- Drag rotation
+- Touch rotation
+- Mouse interaction
+- Rotation sensitivity
+- Inertia
+- Momentum
+- Snap to nearest slide
+- Click to focus
+- Click to bring card forward
+- Auto-rotation
+- Adjustable auto-rotation speed
+- Adjustable direction
+- Pause on hover
+- Pause on interaction
+- Infinite rotation where appropriate
+
+## 3D active-card behavior
+
+Allow the active card to:
+
+- Move forward
+- Scale up
+- Increase opacity
+- Receive stronger lighting
+- Receive a shadow
+- Become sharper
+- Trigger content reveal
+- Animate independently
+
+Inactive cards should be configurable without compromising the geometry of the formation.
+
+## 3D implementation strategy
+
+Prefer a lightweight CSS 3D implementation using:
+
+- Perspective
+- Transform-style: preserve-3d
+- Translate3d
+- RotateX
+- RotateY
+- RotateZ
+- Backface visibility
+
+Use reusable geometry calculations.
+
+Do not introduce Three.js unless the existing architecture or a specific feature genuinely requires a full WebGL 3D scene.
+
+Keep the 3D carousel performant, responsive, interactive, and exportable.
+
+---
+
+# 6. MOBILE EDITOR — REDESIGN THE WORKSPACE
+
+The mobile editor should be a purpose-built creative workspace.
+
+Do not simply shrink the desktop editor.
+
+The mobile experience must consist of:
+
+1. Top toolbar
+2. Live preview workspace
+3. Adjustable bottom control panel
+
+The preview and bottom panel must coexist.
+
+The user should be able to decide how much space is allocated to the preview and how much to the controls.
+
+## Mobile workspace
+
+The preview remains in the upper region.
+
+The control panel is anchored at the bottom.
+
+Between them is a dedicated draggable resize handle.
+
+The panel must be vertically resizable.
+
+The preview should adapt dynamically as the panel height changes.
+
+Avoid separate screens that force users to completely hide the preview just to access controls.
+
+## Mobile top toolbar
+
+Keep important actions accessible:
+
+- Project name
+- Undo
+- Redo
+- Preview mode
+- Export
+- Additional project actions
+
+Avoid overcrowding the top toolbar.
+
+Use responsive action grouping where necessary.
+
+---
+
+# 7. RESIZABLE BOTTOM CONTROL PANEL
+
+Implement an advanced adjustable bottom panel.
+
+## Resizing behavior
+
+Support:
+
+- Drag-to-resize
+- Minimum height
+- Maximum height
+- Custom heights
+- Snap points
+- Compact state
+- Balanced state
+- Expanded state
+- Fullscreen editing state where appropriate
+
+Suggested snap positions:
+
+- Compact: 22–30% of usable screen
+- Balanced: 45–55%
+- Expanded: 75–88%
+
+These are flexible starting values.
+
+The user must be able to drag between snap points and use custom sizes.
+
+## Interaction
+
+- Drag handle must be clearly visible.
+- Resizing should be smooth.
+- Snap behavior should be predictable.
+- Quick upward movement should expand.
+- Quick downward movement should collapse.
+- Double-tap may toggle useful panel states.
+- Panel height should persist when switching categories.
+- Panel must respect safe-area insets.
+- Internal scrolling must not resize the panel.
+- Slider interactions must not resize the panel.
+- Carousel swipes must not resize the panel.
+
+Use appropriate pointer-event boundaries and gesture management.
+
+Do not use the entire panel as a draggable surface.
+
+---
+
+# 8. MULTILAYERED MOBILE CONTROL ARCHITECTURE
+
+Organize the mobile control panel into three layers.
+
+## Layer 1 — Main categories
+
+Create a primary navigation layer.
+
+Suggested categories:
+
+- Carousel
+- Motion
+- Style
+- 3D
+- Controls
+- Settings
+
+Use a touch-friendly navigation row or another appropriate mobile navigation design.
+
+Provide:
+
+- Clear labels
+- Icons
+- Active state
+- Easy category switching
+- Minimal clutter
+
+## Layer 2 — Subcategories
+
+Each main category should contain contextual subcategories.
+
+### Carousel
+
+- Layout
+- Slides
+- Structure
+- Navigation
+
+### Motion
+
+- Transition
+- Direction
+- Timing
+- Easing
+- Dynamics
+- Advanced
+
+### Style
+
+- Cards
+- Images
+- Typography
+- Background
+- Effects
+
+### 3D
+
+- Formation
+- Geometry
+- Camera
+- Rotation
+- Depth
+- Interaction
+- Animation
+- Appearance
+
+### Controls
+
+- Arrows
+- Dots
+- Progress
+- Thumbnails
+- Position
+- Behavior
+
+### Settings
+
+- Autoplay
+- Loop
+- Responsive
+- Accessibility
+- Advanced
+
+Subcategory navigation must adapt to available space.
+
+Do not force all subcategories into an overcrowded fixed row.
+
+## Layer 3 — Control workspace
+
+Display the actual controls associated with the selected subcategory.
+
+Examples:
+
+Motion > Timing:
+- Duration
+- Delay
+- Stagger
+
+Motion > Direction:
+- Direction selection
+- Axis
+- Movement distance
+- Directional intensity
+
+Motion > Easing:
+- Easing presets
+- Custom easing
+- Curve editor if supported
+
+Motion > Dynamics:
+- Spring
+- Stiffness
+- Damping
+- Mass
+- Velocity
+
+3D > Formation:
+- Formation selector
+- Visual formation previews
+- Geometry presets
+
+3D > Geometry:
+- Radius
+- Card size
+- Spacing
+- Depth
+
+3D > Camera:
+- Perspective
+- Distance
+- Focal depth
+- View angle
+
+Only render the relevant controls.
+
+Do not display unrelated settings in the same workspace.
+
+---
+
+# 9. CONTEXTUAL NESTED PANELS
+
+Some complex settings must open dedicated nested workspaces.
+
+Examples:
+
+Carousel > Layout:
+Opens layout selection and configuration.
+
+Carousel > Slides:
+Opens slide management.
+
+Motion > Easing:
+Opens easing configuration.
+
+Style > Images:
+Opens image controls.
+
+3D > Formation:
+Opens formation selector.
+
+3D > Camera:
+Opens camera controls.
+
+Requirements:
+
+- Clear back navigation
+- Contextual title
+- Preserve parent state
+- Preserve scroll position where appropriate
+- Avoid excessive nesting
+- Avoid resetting values
+- Keep navigation predictable
+
+Use nested panels when they materially improve organization, not simply for every setting.
+
+---
+
+# 10. MOBILE CONTROL QUALITY
+
+Every control must be designed for touch.
+
+## Sliders
+
+- Larger touch target
+- Larger thumb
+- Current value display
+- Unit display
+- Numeric editing
+- Fine adjustment
+- Appropriate steps
+- Accessible labels
+
+## Numeric inputs
+
+- Direct editing
+- +/- adjustment where useful
+- Validation
+- Min/max enforcement
+- Decimal support when required
+
+## Selectors
+
+- Touch-friendly
+- Clear selected state
+- Mobile selection sheet when appropriate
+- Search when the option list is large
+
+## Buttons
+
+- Large touch targets
+- Clear feedback
+- Consistent states
+- No accidental triggering of gestures
+
+## Control organization
+
+- Clear labels
+- Logical groups
+- Collapsible advanced settings
+- Progressive disclosure
+- No unnecessary clutter
+- No endless scrolling through unrelated controls
+
+---
+
+# 11. RESPONSIVE PREVIEW SYSTEM
+
+Upgrade the preview so it dynamically adapts to the available workspace.
+
+Requirements:
+
+- Resize based on available area.
+- Maintain selected aspect ratio.
+- Preserve active slide.
+- Preserve animation state where practical.
+- Update layout calculations when the preview changes size.
+- Avoid animation resets.
+- Avoid flickering.
+- Avoid unnecessary rerenders.
+- Support compact preview.
+- Support expanded preview.
+- Support fullscreen preview.
+
+The preview must remain responsive while the bottom panel is being resized.
+
+Provide an easy way to maximize the preview and return to the editing workspace.
+
+---
+
+# 12. RESPONSIVE EDITOR FOR TABLET AND DESKTOP
+
+Do not force mobile architecture onto desktop.
+
+## Mobile
+
+- Preview above.
+- Adjustable bottom control panel.
+- Multilayered navigation.
+- Touch-first interactions.
+
+## Tablet
+
+- Flexible split workspace.
+- Preview and controls coexist.
+- Adjustable panel or split sizes.
+- Touch-friendly controls.
+
+## Desktop
+
+- Preserve the existing editor structure.
+- Keep the existing sidebar/workspace approach unless there is a clear improvement.
+- Improve spacing and usability only where needed.
+- Do not regress desktop behavior.
+
+Use actual viewport space and responsive breakpoints.
+
+---
+
+# 13. SLIDE CONTENT EDITOR UPGRADE
+
+Improve slide editing.
+
+Support a more organized slide editor for:
+
+- Slide title
+- Eyebrow
+- Description
+- CTA
+- Image
+- Image focal point
+- Background
+- Accent
+- Content alignment
+- Text position
+- Overlay
+- Individual slide configuration
+
+Improve mobile slide editing.
+
+Requirements:
+
+- Touch-friendly slide list
+- Easy reordering
+- Clear add-slide action
+- Easy editing
+- Image selection
+- Image focal adjustment
+- Accessible deletion
+- No unnecessary multi-column layouts on small screens
+
+Where appropriate, allow advanced content positioning and visual configuration without making the standard editor complicated.
+
+Do not unnecessarily change the existing project data format.
+
+---
+
+# 14. RESPONSIVE CONFIGURATION
+
+Allow carousel behavior to adapt to different screen sizes.
+
+Where appropriate, support breakpoint-specific settings for:
+
+- Layout
+- Visible slides
+- Spacing
+- Card width
+- Card height
+- Motion intensity
+- Navigation
+- Alignment
+- 3D behavior
+- Interaction
+
+Support configuration inheritance.
+
+The user should not be forced to configure every breakpoint independently.
+
+Provide sensible defaults.
+
+Allow mobile-specific overrides when necessary.
+
+Do not introduce responsive configuration that is too complicated for the average user.
+
+---
+
+# 15. NAVIGATION AND INTERACTION ENGINE
+
+Improve navigation controls.
+
+Support configurable:
+
+- Arrows
+- Dots
+- Pagination
+- Fraction indicators
+- Progress indicators
+- Thumbnails
+- Vertical navigation
+- Custom positioning
+- Visibility
+- Active states
+- Hover behavior
+- Touch behavior
+
+Navigation controls should be independent of carousel layout where technically appropriate.
+
+Support:
+
+- Keyboard navigation
+- Touch navigation
+- Drag/swipe
+- Click
+- Autoplay
+- Pause
+- Loop
+- Snap
+- Interaction sensitivity
+
+Avoid duplicating interaction logic across layouts.
+
+---
+
+# 16. PRESET SYSTEM UPGRADE
+
+Preserve existing presets.
+
+Improve the preset architecture so presets are meaningful configurations rather than merely combinations of basic layout and motion settings.
+
+Create preset categories such as:
+
+- Minimal
+- Modern
+- Editorial
+- Cinematic
+- Product
+- Creative
+- 3D
+- Experimental
+- Continuous
+- Showcase
+
+Presets should configure appropriate settings, including:
+
+- Layout
+- Motion
+- Transition
+- Easing
+- Spacing
+- Visible slides
+- Navigation
+- Appearance
+- 3D geometry
+- Interaction
+
+When appropriate, presets should use new engine capabilities.
+
+Presets must:
+
+- Preview instantly.
+- Remain editable.
+- Be compatible with the project configuration.
+- Not overwrite unrelated settings unnecessarily.
+- Provide a coherent visual and motion result.
+
+Add genuinely distinctive presets.
+
+Avoid generating dozens of presets that are nearly identical.
+
+---
+
+# 17. EXPORT ENGINE
+
+Improve export quality and consistency.
+
+Preserve existing export formats.
+
+Evaluate and improve:
+
+- React
+- React + TypeScript
+- CSS
+- Standalone HTML
+- Vanilla JavaScript
+- JSON
+- ZIP
+- Embeddable versions
+
+## Export principles
+
+- Preview and exported behavior must match.
+- Export must not contain editor code.
+- Avoid unnecessary dependencies.
+- Keep output optimized.
+- Keep code readable where appropriate.
+- Support responsive behavior.
+- Support accessibility.
+- Support reduced motion.
+- Avoid memory leaks.
+- Clean up listeners.
+- Clean up animation loops.
+- Optimize image handling.
+- Lazy-load when appropriate.
+- Avoid oversized bundles.
+
+Provide configuration for export output where appropriate.
+
+Do not export unused motion, layout, or control code.
+
+3D exports must preserve actual 3D behavior rather than degrade into a flat layout.
+
+---
+
+# 18. PERFORMANCE AND ENGINEERING QUALITY
+
+Performance is a core requirement.
+
+Inspect performance bottlenecks before optimizing.
+
+Improve:
+
+- Preview rendering
+- Animation loops
+- State management
+- Geometry calculations
+- Resize handling
+- Touch handling
+- Image loading
+- 3D transforms
+- Export generation
+
+Avoid:
+
+- Excessive React rerenders
+- Repeated geometry calculations
+- Unnecessary animation loops
+- Excessive DOM updates
+- Layout thrashing
+- Unnecessary dependencies
+- Duplicate event listeners
+- Memory leaks
+
+Use requestAnimationFrame appropriately.
+
+Use efficient transforms.
+
+Prefer transform and opacity animations where appropriate.
+
+Do not apply expensive blur, shadow, or compositing effects unnecessarily on mobile.
+
+Do not sacrifice visual quality without reason.
+
+---
+
+# 19. ACCESSIBILITY
+
+Improve accessibility throughout the builder and exported carousel.
+
+Support:
+
+- Keyboard navigation
+- Accessible labels
+- Focus management
+- Visible focus states
+- Appropriate semantic markup
+- Reduced-motion preferences
+- Touch accessibility
+- Accessible controls
+- Accessible navigation
+
+Ensure exported carousels remain usable without mouse interaction.
+
+---
+
+# 20. ARCHITECTURE AND CODE QUALITY
+
+Keep the codebase modular.
+
+Avoid turning the application into a giant component.
+
+Separate concerns where appropriate:
+
+- Carousel engine
+- Layout engine
+- Geometry
+- Motion
+- Transitions
+- Interaction
+- Navigation
+- Responsive behavior
+- Presets
+- Preview
+- Export
+- Mobile editor
+- Control components
+
+Reuse existing code where it is good.
+
+Refactor only when justified.
+
+Avoid unnecessary abstraction.
+
+Avoid duplicated calculations.
+
+Avoid creating parallel systems that do the same thing.
+
+Do not introduce dependencies unless they provide substantial value.
+
+Keep TypeScript types accurate.
+
+Maintain backward compatibility with existing saved projects.
+
+---
+
+# 21. IMPLEMENTATION WORKFLOW
+
+Implement this upgrade in carefully organized phases.
+
+## Phase 1 — Codebase audit
+
+Inspect the complete current architecture.
+
+Document existing features, limitations, and critical dependencies.
+
+Create a prioritized implementation plan.
+
+## Phase 2 — Core engine improvements
+
+Improve layout architecture, motion, transition consistency, interactions, and preview/export parity.
+
+Do not regress existing layouts.
+
+## Phase 3 — Dedicated 3D carousel engine
+
+Implement reusable geometry, formations, camera, depth, rotation, interaction, and responsive behavior.
+
+## Phase 4 — Mobile editor architecture
+
+Implement the preview and adjustable bottom panel.
+
+Implement multilayered navigation.
+
+Implement contextual nested workspaces.
+
+## Phase 5 — Controls and responsive behavior
+
+Improve mobile control quality, responsive configuration, slide editor, and navigation.
+
+## Phase 6 — Presets
+
+Improve the preset architecture and create high-quality distinctive presets using the upgraded engine.
+
+## Phase 7 — Export
+
+Improve output quality, performance, responsiveness, and behavior consistency.
+
+## Phase 8 — Optimization and regression testing
+
+Test all existing and new features.
+
+Fix regressions before considering the work complete.
+
+Do not implement everything blindly in one giant refactor.
+
+Use small, organized changes that preserve existing functionality.
+
+---
+
+# 22. TESTING REQUIREMENTS
+
+Test:
+
+- Existing layouts
+- New layouts
+- Existing motion types
+- New transitions
+- Direction
+- Easing
+- Autoplay
+- Loop
+- Drag
+- Swipe
+- Keyboard
+- Navigation
+- Presets
+- Slide editing
+- Image handling
+- Responsive behavior
+- Mobile resizing
+- Panel resizing
+- Nested control navigation
+- 3D rotation
+- 3D formations
+- Camera
+- Inertia
+- Snapping
+- Export
+- Project save/load
+- Undo/redo
+
+Test on:
+
+- Small mobile screens
+- Large mobile screens
+- Portrait
+- Landscape
+- Tablet
+- Desktop
+
+Check for:
+
+- Overflow
+- Broken layouts
+- Gesture conflicts
+- Animation jumps
+- State loss
+- Performance degradation
+- Export discrepancies
+- Console errors
+- Memory leaks
+
+---
+
+# 23. STRICT RULES
+
+- Do not rebuild MotionForge from scratch.
+- Do not remove existing functionality.
+- Do not replace working features unnecessarily.
+- Do not break existing saved projects.
+- Do not redesign desktop unnecessarily.
+- Do not create mock controls.
+- Do not create settings that do nothing.
+- Do not create fake presets.
+- Do not introduce unnecessary dependencies.
+- Do not add excessive abstraction.
+- Do not sacrifice mobile performance.
+- Do not sacrifice export quality.
+- Do not stop after implementing a UI shell.
+- Do not leave incomplete features presented as finished.
+- Do not claim tests passed if they were not executed.
+
+Inspect before implementing.
+
+Preserve existing functionality.
+
+Implement real functionality.
+
+Test your changes.
+
+---
+
+# 24. FINAL OBJECTIVE
+
+MotionForge should evolve into a professional slider and carousel creation studio with:
+
+- Powerful 2D carousel layouts
+- A dedicated 3D carousel engine
+- Advanced motion behavior
+- Sophisticated transitions
+- Interactive controls
+- Responsive configuration
+- A professional preset library
+- A flexible mobile editing workspace
+- A draggable and adjustable mobile bottom panel
+- Multilayered control navigation
+- Contextual nested settings
+- Smooth live preview
+- Powerful exports
+- Lightweight and optimized generated code
+
+The interface must be approachable for basic users while exposing advanced capabilities to experienced designers and developers.
+
+The engine should be powerful.
+
+The interface should remain organized.
+
+The mobile experience should be genuinely usable.
+
+The preview should remain responsive.
+
+The exported code should be modern, clean, optimized, and production-ready.
+
+Start by auditing the existing repository. Then implement the improvements in phases using the existing architecture.
+
+At the end, provide a detailed implementation report describing:
+
+1. What you inspected.
+2. What was improved.
+3. What new features were implemented.
+4. What existing features were preserved.
+5. What files were changed.
+6. What tests were performed.
+7. What remains incomplete.
+
+Do not provide only recommendations or a plan. Execute the work in the existing project.
