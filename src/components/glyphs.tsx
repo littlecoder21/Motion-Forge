@@ -48,6 +48,15 @@ const FORMATION: Record<string, ReactNode> = {
   orbit: <>{rot(22, 15, -14, <ellipse cx="22" cy="15" rx="18" ry="6" fill="none" stroke="currentColor" strokeWidth="1.3" opacity=".5" />)}{R(16, 9, 12, 14)}{R(2, 9, 6, 8, 0.5)}{R(36, 14, 6, 8, 0.5)}</>,
   sphere: <><circle cx="22" cy="15" r="12" fill="none" stroke="currentColor" strokeWidth="1.3" opacity=".5" /><ellipse cx="22" cy="15" rx="12" ry="4" fill="none" stroke="currentColor" strokeWidth="1" opacity=".35" />{R(18, 10, 8, 10)}{R(8, 7, 5, 6, 0.5)}{R(31, 19, 5, 6, 0.5)}</>,
   multi: <><ellipse cx="22" cy="19" rx="17" ry="6" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".4" /><ellipse cx="22" cy="10" rx="11" ry="4" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".4" />{R(17, 14, 10, 12)}{R(18, 3, 8, 8, 0.6)}</>,
+  // Receding staircase climbing to the upper right.
+  cascade: <>{R(30, 2, 5, 6, 0.3, 1)}{R(25, 5, 6.5, 8, 0.45, 1)}{R(18, 9, 8.5, 10.5, 0.65, 1)}{R(9, 14, 11, 13, 1, 1.5)}</>,
+  // Parallel slanted plates stepping along a diagonal.
+  isometric: <>{[0, 1, 2, 3, 4].map((i) => <path key={i} d={`M${5 + i * 7} ${22 - i * 3} l5 -4 v13 l-5 4Z`} opacity={0.4 + i * 0.15} />)}</>,
+  // Horseshoe of cards riding an ellipse.
+  arc: <><path d="M6 24 A16 14 0 1 1 38 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".4" />{rot(22, 29, -62, R(18, 3, 7, 9, 0.5))}{rot(22, 29, -24, R(18, 1, 8, 10, 0.75))}{rot(22, 29, 24, R(18, 1, 8, 10, 0.75))}{rot(22, 29, 62, R(18, 3, 7, 9, 0.5))}{R(17, 19, 10, 9)}</>,
+  // Tiles lining a tube that runs away from the viewer.
+  vortex: <><circle cx="22" cy="15" r="13" fill="none" stroke="currentColor" strokeWidth="1" opacity=".3" /><circle cx="22" cy="15" r="7.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".4" /><circle cx="22" cy="15" r="3" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" />
+    {[0, 60, 120, 180, 240, 300].map((a) => rot(22, 15, a, R(19.5, 1.5, 5, 5.5, 0.85, 1)))}{[30, 90, 150, 210, 270, 330].map((a) => rot(22, 15, a, R(20.5, 7.4, 3, 3, 0.55, 0.6)))}</>,
 };
 /** Small schematic icons so every layout / transition / formation is recognisable at a glance. */
 export function Glyph({ family, id }: { family: 'layout' | 'motion' | 'formation'; id: string }) {

@@ -48,12 +48,31 @@ function App() {
   const [exportOpen, setExportOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const activeSlide: Slide = project.slides[project.active] ?? project.slides[0];
 
   const aspectRatio = ratio === 'auto'
     ? device === 'Mobile' ? '390 / 844' : device === 'Tablet' ? '768 / 1024' : device === 'Laptop' ? '16 / 10' : device === 'Ultra-wide' ? '21 / 9' : device === 'Custom' ? `${customViewportWidth} / ${customViewportHeight}` : '16 / 9'
     : ratio === 'custom' ? `${customRatioWidth} / ${customRatioHeight}` : ratio;
   const viewportDimensions = device === 'Custom' ? `${customViewportWidth} × ${customViewportHeight}` : deviceDimensions[device];
+  const [ratioWidth, ratioHeight] = aspectRatio.split('/').map(Number);
+  const ratioValue = ratioWidth / ratioHeight;
+  const requestedWidth = device === 'Custom' ? customViewportWidth : stageSize.width * (parseFloat(deviceSizes[device]) / 100);
+  const previewWidth = stageSize.width > 0 && stageSize.height > 0
+    ? Math.min(requestedWidth, stageSize.width, stageSize.height * ratioValue)
+    : undefined;
+  const fallbackWidth = device === 'Custom' ? `min(${customViewportWidth}px, 100%)` : deviceSizes[device];
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setStageSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+    });
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
 
   // Keep the preview's play state in step with the Autoplay setting.
   useEffect(() => { setPlaying(project.autoplay); }, [project.autoplay]);
@@ -148,9 +167,9 @@ function App() {
             <button type="button" className="tool-button" title="Zoom out" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(0.6, +(z - 0.1).toFixed(1)))}><ZoomOut size={15} /></button><span className="zoom-label mono">{Math.round(zoom * 100)}%</span><button type="button" className="tool-button" title="Zoom in" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(1.2, +(z + 0.1).toFixed(1)))}><ZoomIn size={15} /></button>
           </div>
         </div>
-        <div className="canvas-stage">
+        <div className="canvas-stage" ref={stageRef}>
           <div className="stage-ruler"><span>PREVIEW STAGE</span><span className="mono">{viewportDimensions} · {aspectRatio.replace(' / ', ':')}</span></div>
-          <div className={`canvas-frame ${device.toLowerCase().replace(' ', '-')}`} style={{ width: device === 'Custom' ? `min(${customViewportWidth}px, 100%)` : deviceSizes[device], '--zoom': zoom } as CSSProperties}>
+          <div className={`canvas-frame ${device.toLowerCase().replace(' ', '-')}`} style={{ width: previewWidth === undefined ? fallbackWidth : `${previewWidth}px`, '--zoom': zoom } as CSSProperties}>
             <Preview project={project} playing={playing} onSelect={select} onAuto={selectQuiet} onPlayState={setPlaying} device={device} zoom={zoom} grid={grid} safe={safe} ratio={aspectRatio} />
           </div>
           <div className="stage-foot"><span><b className="live-dot" /> Changes update in real time</span><span>DRAG, SWIPE OR USE ← → TO NAVIGATE</span></div>

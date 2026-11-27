@@ -52,6 +52,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
   let anim = null, springOn = false, springStart = 0, gliding = false;
   let playing = !!cfg.autoplay, autoT = 0, hovered = false, restUntil = 0, lastWheel = 0;
   let dragging = false, ptr = null, suppressClick = false;
+  let scrubbing = false, wheelTimer = 0, wheelSamples = [], wheelStart = 0;
   let mx = 0, tiltX = 0, tiltY = 0, tiltTX = 0, tiltTY = 0;
   let cards = [], reps = 1, lastCur = -1, geo = { pitch: 300, u: 10 }, hist = [], settleUntil = 0, lastChange = 0;
   let applied = [], navRefs = { dots: [], frac: null, prev: null, next: null, play: null }, sig = '';
@@ -75,10 +76,14 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
   const isCyc = () => eff.layout === 'spatial' || (cfg.loop && cfg.seamlessLoop && eff.layout !== 'accordion' && eff.layout !== 'marquee');
   const loopOK = () => eff.layout !== 'accordion' && eff.layout !== 'marquee' && (eff.layout === 'spatial' || cfg.loop);
   const angRad = () => (eff.angle || 0) * RAD;
-  const wrapD = (d) => (isCyc() && n > 1 ? (eff.layout === 'deck' ? mod(d + 1.2, n) - 1.2 : mod(d + n / 2, n) - n / 2) : d);
+  const wrapD = (d) => (isCyc() && n > 1 ? (eff.layout === 'deck' ? mod(d + 1.2, n) - 1.2 : eff.layout === 'spatial' && (eff.spatial.formation === 'vortex' || eff.spatial.formation === 'cascade') ? mod(d + 1.5, n) - 1.5 : mod(d + n / 2, n) - n / 2) : d);
   const cur = () => (n ? mod(Math.round(pos), n) : 0);
   const tIdx = () => (n ? mod(Math.round(target), n) : 0);
   const useSpring = () => !!eff.fx.spring || (isPaged() && eff.motion === 'elastic');
+  // Input switches. Configs from before touch had its own switch fall back to the old single "drag" flag.
+  const mouseOn = () => eff.nav.drag !== false;
+  const touchOn = () => (eff.nav.touch == null ? eff.nav.drag !== false : eff.nav.touch !== false);
+  const inputOn = () => mouseOn() || touchOn();
 
   const resolve = () => {
     let e = cfg; const r = cfg.responsive;
@@ -94,13 +99,21 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
   };
 
   // ---------- static look (classes + css variables) ----------
+  const isLight = (hex) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false;
+    const v = parseInt(m[1], 16), rr = (v >> 16) & 255, gg = (v >> 8) & 255, bb = v & 255;
+    return (0.299 * rr + 0.587 * gg + 0.114 * bb) / 255 > 0.62;
+  };
   const applyStatic = () => {
     const L = eff.look, ly = eff.layers;
     applied.forEach((c) => root.classList.remove(c));
-    applied = ['mf-f-' + (L.font || 'sans')];
+    applied = ['mf-f-' + (L.font || 'sans'), 'mf-cs-' + (L.cardStyle || 'classic')];
     if (L.sheen) applied.push('has-sheen'); if (L.border) applied.push('has-border');
+    if (L.reflect > 0) applied.push('has-reflect');
+    if (L.grain > 0) applied.push('has-grain');
+    if (isLight(L.stage) || !isLight(L.text || '#f6f5ef')) applied.push('mf-light');
     if (eff.layout === 'spatial' && eff.spatial.backface) applied.push('bf-on');
-    if (eff.nav.drag) applied.push('mf-drag');
+    if (mouseOn()) applied.push('mf-drag');
     ['image', 'overlay', 'eyebrow', 'title', 'body', 'cta', 'index'].forEach((k) => { if (ly[k] === false) applied.push('no-' + k); });
     applied.push('mf-l-' + eff.layout);
     if ((H && H < 280) || (W && W < 340)) applied.push('mf-compact');
@@ -108,15 +121,26 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     root.setAttribute('aria-label', cfg.name || 'Carousel');
     const s = L.shadow / 100, st = root.style;
     st.setProperty('--mf-r', L.radius + 'px');
-    st.setProperty('--mf-shadow', s > 0 ? '0 ' + r2(18 * s) + 'px ' + r2(50 * s) + 'px rgba(0,0,0,' + r2(0.55 * s) + ')' : 'none');
-    st.setProperty('--mf-shadow-a', s > 0 ? '0 ' + r2(26 * s) + 'px ' + r2(70 * s) + 'px rgba(0,0,0,' + r2(0.7 * s) + ')' : 'none');
+    st.setProperty('--mf-shadow', s > 0 ? '0 ' + r2(18 * s) + 'px ' + r2(50 * s) + 'px rgba(0,0,0,' + r2(0.55 * s) + ')' : '0 0 0 0 transparent');
+    st.setProperty('--mf-shadow-a', s > 0 ? '0 ' + r2(26 * s) + 'px ' + r2(70 * s) + 'px rgba(0,0,0,' + r2(0.7 * s) + ')' : '0 0 0 0 transparent');
     st.setProperty('--mf-ts', String(L.titleScale / 100));
     st.setProperty('--mf-stage', L.stage);
+    st.setProperty('--mf-text', L.text || '#f6f5ef');
     st.setProperty('--mf-ov', String(L.overlay / 100));
+    const tintMatch = /^#([0-9a-f]{6})$/i.exec(L.overlayTint || '#080d0f');
+    const tint = parseInt(tintMatch ? tintMatch[1] : '080d0f', 16);
+    const tintRgb = ((tint >> 16) & 255) + ',' + ((tint >> 8) & 255) + ',' + (tint & 255);
+    st.setProperty('--mf-overlay', 'rgba(' + tintRgb + ',' + String(L.overlay / 100) + ')');
+    st.setProperty('--mf-overlay-faint', 'rgba(' + tintRgb + ',.04)');
+    st.setProperty('--mf-grain', String((L.grain || 0) / 100));
     st.setProperty('--mf-br', String(L.brightness / 100));
     st.setProperty('--mf-vig', String(r2((L.vignette / 100) * 0.75)));
+    st.setProperty('--mf-frame', String(L.frame == null ? 3 : L.frame));
+    st.setProperty('--mf-glow', String(r2((L.glow == null ? 55 : L.glow) / 100)));
+    st.setProperty('--mf-refl', String(r2(((L.reflect || 0) / 100) * 0.62)));
     const ax = isPaged() ? Math.abs(Math.sin(angRad())) : 0;
-    st.touchAction = ax > 0.7 ? 'pan-x' : 'pan-y';
+    // Let the browser keep its own scrolling when touch swiping is switched off.
+    st.touchAction = touchOn() ? (ax > 0.7 ? 'pan-x' : 'pan-y') : 'auto';
     ease = makeEase(cfg);
   };
 
@@ -128,7 +152,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     e.setAttribute('role', 'group'); e.setAttribute('aria-roledescription', 'slide'); e.setAttribute('aria-label', (k + 1) + ' of ' + n);
     const bg = el('div', 'mf-bg'), shade = el('div', 'mf-shade'), copy = el('div', 'mf-copy');
     bg.style.backgroundColor = s.color; bg.style.backgroundPosition = s.focal || '50% 50%';
-    if (!s.image) bg.style.backgroundImage = slideBg(s);
+    if (!s.image) bg.style.backgroundImage = L.cardBackground || slideBg(s);
     const eb = el('div', 'mf-eyebrow'); eb.appendChild(el('i')); eb.appendChild(doc.createTextNode(s.eyebrow));
     const h = el('h2', '', s.title), p = el('p', '', s.body), a = el('a', 'mf-cta');
     a.textContent = s.cta + ' ↗'; a.href = s.href || '#';
@@ -162,6 +186,8 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     if (n < 2) return;
     const vertical = isPaged() && Math.abs(Math.sin(angRad())) > 0.7;
     navEl.dataset.pos = nv.position || 'bottom';
+    navEl.dataset.arrowStyle = nv.arrowStyle || 'round';
+    navEl.dataset.paginationStyle = nv.paginationStyle || 'bar';
     const bar = el('div', 'mf-bar'), left = el('div', 'mf-left'), right = el('div', 'mf-arrows');
     if (nv.thumbs) {
       const t = el('div', 'mf-thumbs');
@@ -217,7 +243,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     if (isPaged()) pitch = Math.max(80, Math.abs(ux) * W + Math.abs(uy) * H);
     else if (l === 'multi') { const v = clamp(Math.round(eff.visible), 2, 5), cw = (W - gp * (v - 1)) / v; u = cw / 100; pitch = cw + gp; }
     else if (l === 'centered') { const cw = W * cwP; u = cw / 100; pitch = cw + gp; }
-    else if (l === 'coverflow') { const cw = W * cwP; u = cw / 100; pitch = cw * 0.3; }
+    else if (l === 'coverflow') { const cw = W * cwP; u = cw / 100; pitch = cw * 0.3 * (1 + Math.max(0, gp - 20) / 16); }
     else if (l === 'stack') { const cw = W * cwP; u = cw / 100; pitch = W * 0.3; }
     else if (l === 'spotlight') { const cw = W * cwP; u = cw / 100; pitch = cw * 0.58; }
     else if (l === 'fan') { const cw = W * cwP * 0.8; u = cw / 100; pitch = cw * 0.4; }
@@ -305,7 +331,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     pts.push([Q * 2, Q], [Q * 2, -Q]);
     return 'polygon(' + pts.map((p) => r2(cx + p[0] * ux + p[1] * vx) + 'px ' + r2(cy + p[0] * uy + p[1] * vy) + 'px').join(',') + ')';
   };
-  const blank = () => ({ x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, s: 1, o: 1, b: 0, br: 1, zi: 20, clip: '', mask: '', bgx: 0, bgy: 0, bgs: 1, cpx: 0, cpy: 0, co: 1, ox: '', w: 0, h: 0 });
+  const blank = () => ({ x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, s: 1, o: 1, b: 0, br: 1, zi: 20, clip: '', mask: '', bgx: 0, bgy: 0, bgs: 1, cpx: 0, cpy: 0, co: 1, ox: '', w: 0, h: 0, tf: '' });
   const originCss = () => { const o = eff.fx.origin; return o === 'top' ? '50% 0%' : o === 'bottom' ? '50% 100%' : o === 'left' ? '0% 50%' : o === 'right' ? '100% 50%' : ''; };
 
   const pagedStyle = (d, S) => {
@@ -356,12 +382,15 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
   };
 
   let accW = [], accX = [], accE = [], SP = null;
+  const LINEAR = { tunnel: 1, wave: 1, cascade: 1, isometric: 1, arc: 1, vortex: 1 };
+  const INWARD = { ring: 1, cylinder: 1, helix: 1, spiral: 1, orbit: 1, multi: 1 };
   const spatialPrep = () => {
     const sp = eff.spatial, cw = (W * sp.cardW) / 100, ch = (H * sp.cardH) / 100, f = sp.formation;
     let R = (W * sp.radius) / 100, stepDeg = sp.spacing > 0 ? sp.spacing : 360 / Math.max(1, n);
     if (f === 'cylinder') { stepDeg = 360 / Math.max(1, n); R = Math.max(cw * 0.5, (cw + eff.gap) / (2 * Math.tan(PI / Math.max(n, 3)))); }
     const o = { cw, ch, R, stepDeg, vr: (H * sp.vRadius) / 100, f, sp, R0: 0, psi: 0, chi: 0 };
-    o.R0 = f === 'tunnel' || f === 'wave' ? 0 : R;
+    // Facing "in" puts the camera inside the ring: the active card sits on the far wall and the band curves toward you.
+    o.R0 = LINEAR[f] ? 0 : (sp.facing === 'in' && INWARD[f] ? -R : R);
     if (f === 'sphere') {
       const G = 2.399963229728653, N = Math.max(1, n), j = Math.floor(pos), fr = pos - j;
       const wrapPi = (a) => mod(a + PI, 2 * PI) - PI;
@@ -374,7 +403,8 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
   const spatialStyle = (k, d, S) => {
     const { cw, ch, R, stepDeg, vr, f, sp } = SP, I = eff.fx.intensity / 100;
     const half = Math.max(n / 2, 0.5), a = Math.abs(d) / half, th = d * stepDeg * RAD;
-    let px = 0, py = 0, pz = 0, yaw = 0, pitch = 0, roll = 0, fr = 1 - Math.min(1, a), circ = false;
+    const dstep = sp.depthStep == null ? 12 : sp.depthStep;
+    let px = 0, py = 0, pz = 0, yaw = 0, pitch = 0, roll = 0, fr = 1 - Math.min(1, a), circ = false, vortexRoll = null;
     switch (f) {
       case 'ring': case 'cylinder': circ = true; px = R * Math.sin(th); pz = R * Math.cos(th); break;
       case 'orbit': circ = true; px = R * Math.sin(th); pz = R * Math.cos(th); py = vr * (Math.cos(th) - 1); break;
@@ -383,6 +413,32 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
       case 'multi': { circ = true; const ring = mod(k, 2), rr = ring ? R * 0.62 : R; px = rr * Math.sin(th); pz = rr * Math.cos(th); py = ring ? -ch * 0.7 : 0; break; }
       case 'tunnel': pz = -d * R * 0.45; px = d * cw * 0.3; py = -Math.abs(d) * ch * 0.07; roll = d * sp.twist; fr = d < 0 ? 1 - Math.min(1, -d * 0.6) : 1 - Math.min(1, a); break;
       case 'wave': px = d * cw * 0.72; py = Math.sin(d * 1.1) * H * sp.amplitude / 100; pz = -Math.abs(d) * R * 0.18; yaw = -clamp(d, -3, 3) * 9; roll = Math.cos(d * 1.1) * sp.amplitude * 0.25; break;
+      case 'cascade': {
+        // A staircase receding up and to the right; passed cards swing toward the viewer and fade.
+        // The active card sits low-left; what is coming climbs away up and to the right.
+        px = (d - 1.1) * cw * sp.spacing / 100; py = -(d - 1.1) * H * sp.rise / 100; pz = -d * cw * dstep / 100;
+        fr = d >= 0 ? 1 - Math.min(1, d / Math.max(3, n * 0.45)) : 1 - Math.min(1, -d * 0.6);
+        break;
+      }
+      case 'isometric': {
+        // Parallel plates stepping along a diagonal; each plate's own turn comes from Card yaw / pitch.
+        px = d * cw * sp.spacing / 100; py = -d * H * sp.rise / 100; pz = -Math.abs(d) * 6;
+        fr = 1 - Math.min(1, a);
+        break;
+      }
+      case 'arc': {
+        // A vertical wheel: cards ride an ellipse in the screen plane, the far side sinks away in depth.
+        px = R * Math.sin(th); py = vr * Math.cos(th); pz = -(1 - Math.cos(th)) * R * 0.35;
+        roll = sp.facing === 'front' ? 0 : -th / RAD; fr = (1 + Math.cos(th)) / 2;
+        break;
+      }
+      case 'vortex': {
+        // Tiles lining the inside of a tube, spiralling away down its axis.
+        const Rv = Math.min(W, H) * sp.radius / 100, ph = (90 + d * stepDeg) * RAD;
+        px = Rv * Math.cos(ph); py = Rv * Math.sin(ph); pz = -d * cw * dstep / 100; vortexRoll = ph / RAD;
+        fr = d >= 0 ? 1 - Math.min(1, d / Math.max(4, n * 0.55)) : 1 - Math.min(1, -d * 0.7);
+        break;
+      }
       case 'sphere': {
         const G = 2.399963229728653, N = Math.max(1, n), y = clamp(1 - (2 * (k + 0.5)) / N, -1, 1), rho = Math.sqrt(1 - y * y), phi = k * G;
         const x0 = rho * Math.cos(phi), z0 = rho * Math.sin(phi), al = SP.psi - PI / 2;
@@ -391,15 +447,27 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
         px = R * x1; py = -R * y2; pz = R * z2; yaw = Math.atan2(x1, z2) / RAD; pitch = Math.asin(clamp(y2, -1, 1)) / RAD; fr = (z2 + 1) / 2; break;
       }
     }
-    if (circ) { yaw = sp.facing === 'front' ? 0 : sp.facing === 'in' ? th / RAD + 180 : th / RAD; fr = (1 + Math.cos(th)) / 2; }
+    let inward = false;
+    if (circ) {
+      inward = sp.facing === 'in';
+      if (inward) { pz = -pz; yaw = -th / RAD; } else yaw = sp.facing === 'front' ? 0 : th / RAD;
+      fr = (1 + Math.cos(th)) / 2;
+    }
     const e = Math.max(0, 1 - Math.abs(d));
-    S.w = cw; S.h = ch; S.x = (W - cw) / 2 + px; S.y = (H - ch) / 2 + py + (H * sp.elevation) / 100; S.z = pz + sp.activeLift * e;
-    S.ry = yaw; S.rx = pitch; S.rz = roll; S.s = 1 + (sp.activeScale / 100 - 1) * e;
+    const pointerDepth = (sp.mouseDepth || 0) * (tiltX * Math.sin(th) - tiltY * Math.cos(th));
+    S.w = cw; S.h = ch; S.x = (W - cw) / 2 + px; S.y = (H - ch) / 2 + py + (H * sp.elevation) / 100; S.z = pz + sp.activeLift * e + pointerDepth;
+    S.ry = yaw + (sp.cardYaw || 0); S.rx = pitch + (sp.cardPitch || 0); S.rz = roll; S.s = 1 + (sp.activeScale / 100 - 1) * e;
     S.o = 1 - (sp.depthFade / 100) * (1 - fr);
-    if (f === 'helix' || f === 'spiral') S.o *= clamp((1 - a) / 0.2, 0, 1);
+    if (f === 'helix' || f === 'spiral' || f === 'isometric') S.o *= clamp((1 - a) / 0.2, 0, 1);
+    // Cascade and Vortex are one-sided: the queue stretches ahead of the active card and only fades at its far end.
+    if (f === 'cascade' || f === 'vortex') S.o *= clamp((n - 1.5 - d) / 1.5, 0, 1);
+    if (f === 'cascade' && d < 0) S.o *= clamp(1 + d * 1.15, 0, 1);
+    if (f === 'vortex' && d < 0) S.o *= clamp(1 + d * 0.9, 0, 1);
+    if (inward) S.o *= clamp((105 - Math.abs(th / RAD)) / 25, 0, 1);
     if (f === 'wave') S.o *= clamp(4.5 - Math.abs(d), 0, 1);
     if (f === 'tunnel' && d < 0) S.o *= clamp(1 + d * 1.1, 0, 1);
     S.br = 1 - (sp.lighting / 100) * (1 - fr); S.b = sp.depthBlur * (1 - fr) * I; S.zi = Math.round(fr * 100);
+    if (vortexRoll != null) S.tf = 'translate3d(' + r2(S.x) + 'px,' + r2(S.y) + 'px,' + r2(S.z) + 'px) rotateZ(' + r2(vortexRoll + (sp.cardYaw || 0)) + 'deg) rotateY(-90deg) rotateX(' + r2(sp.cardPitch || 0) + 'deg) scale(' + r2(S.s * 1000) / 1000 + ')';
   };
 
   const cardStyle = (k, d, S, t) => {
@@ -417,7 +485,8 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     S.w = cw; S.h = ch; S.x = cx; S.y = cy; S.zi = Math.round(30 - a * 5);
     if (l === 'centered') { S.x = cx + d * (cw + gp); S.s = 1 - Math.min(a, 1) * 0.18 * I; if (a > 2.2) S.o = 0; }
     else if (l === 'coverflow') {
-      S.x = cx + sg * cw * (0.28 * Math.min(a, 1) + 0.18 * Math.max(0, a - 1)); S.ry = -clamp(d, -1.5, 1.5) * 28 * I; S.s = Math.max(0.72, 1 - a * 0.14);
+      const spread = 1 + Math.max(0, gp - 20) / 16; /* Card gap above its 20px default pushes neighbours further apart */
+      S.x = cx + sg * cw * spread * (0.28 * Math.min(a, 1) + 0.18 * Math.max(0, a - 1)); S.ry = -clamp(d, -1.5, 1.5) * 28 * I; S.s = Math.max(0.72, 1 - a * 0.14);
       S.z = -Math.min(a, 2) * 90 * D; S.o = a > 2.4 ? 0 : Math.max(0.35, 1 - a * 0.25);
     } else if (l === 'stack') {
       S.w = cw; S.h = H * Math.min(chP, 0.84); S.x = (W - S.w) / 2 + d * 14 * f * I; S.y = (H - S.h) / 2 + a * 14 * f; S.rz = d * 2 * I; S.s = Math.max(0.76, 1 - a * 0.07); if (a > 3.4) S.o = 0;
@@ -451,7 +520,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     if (!c.img && a <= 2.2 && cfg.slides[c.k].image) { c.bg.style.backgroundImage = slideBg(cfg.slides[c.k]); c.img = true; }
     const st = c.st;
     put(e, st, 'width', r2(S.w) + 'px'); put(e, st, 'height', r2(S.h) + 'px');
-    put(e, st, 'transform', 'translate3d(' + r2(S.x) + 'px,' + r2(S.y) + 'px,' + r2(S.z) + 'px) rotateX(' + r2(S.rx) + 'deg) rotateY(' + r2(S.ry) + 'deg) rotateZ(' + r2(S.rz) + 'deg) scale(' + r2(S.s * 1000) / 1000 + ')');
+    put(e, st, 'transform', S.tf || ('translate3d(' + r2(S.x) + 'px,' + r2(S.y) + 'px,' + r2(S.z) + 'px) rotateX(' + r2(S.rx) + 'deg) rotateY(' + r2(S.ry) + 'deg) rotateZ(' + r2(S.rz) + 'deg) scale(' + r2(S.s * 1000) / 1000 + ')'));
     put(e, st, 'transformOrigin', S.ox || '50% 50%');
     put(e, st, 'opacity', String(r2(S.o)));
     put(e, st, 'zIndex', String(S.zi));
@@ -522,7 +591,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
 
   // ---------- physics / time ----------
   const advance = (dt, t) => {
-    if (dragging) return true;
+    if (dragging || scrubbing) return true;
     if (gliding) {
       pos += vel * dt; vel *= Math.exp(-dt * 3.2);
       if (!isCyc() && (pos < 0 || pos > n - 1)) { pos = clamp(pos, 0, n - 1); vel = 0; }
@@ -544,11 +613,11 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     }
     return false;
   };
-  const moving = () => dragging || gliding || !!anim || springOn;
+  const moving = () => dragging || scrubbing || gliding || !!anim || springOn;
 
   const extras = (dt, t) => {
     const l = eff.layout, mv = moving();
-    const paused = dragging || (hovered && (l === 'spatial' ? eff.spatial.pauseHover : eff.nav.pauseOnHover)) || t < restUntil || reduce;
+    const paused = dragging || scrubbing || (hovered && (l === 'spatial' ? eff.spatial.pauseHover : eff.nav.pauseOnHover)) || t < restUntil || reduce;
     if (l === 'marquee') {
       if (!paused && !reduce) mx += eff.fx.speed * dt * (eff.fx.reverse ? -1 : 1);
       return;
@@ -573,7 +642,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
   const tick = (t) => {
     raf = 0; if (destroyed) return;
     const dt = last ? Math.min(0.05, (t - last) / 1000) : 0.016; last = t;
-    if (!inView && !dragging) { running = false; return; }
+    if (!inView && !dragging && !scrubbing) { running = false; return; }
     const before = pos, mv = advance(dt, t);
     extras(dt, t);
     const l = eff.layout;
@@ -585,7 +654,8 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
       dirty = true;
     }
     const stagWin = (eff.fx.stagger || 0) * 4 + 80;
-    const tilting = l === 'spatial' && (Math.abs(tiltX - tiltTX) > 0.002 || Math.abs(tiltY - tiltTY) > 0.002 || eff.spatial.mouseTilt > 0 && (tiltTX || tiltTY));
+    const pointerEffects = eff.spatial.mouseTilt > 0 || eff.spatial.mouseDepth > 0;
+    const tilting = l === 'spatial' && (Math.abs(tiltX - tiltTX) > 0.002 || Math.abs(tiltY - tiltTY) > 0.002 || pointerEffects && (tiltTX || tiltTY));
     const alive = mv || l === 'marquee' || (l === 'spatial' && eff.spatial.autoRotate) || (playing && n > 1) || tilting || t - lastChange < stagWin || dirty;
     if (alive || l === 'marquee') render(t);
     dirty = false;
@@ -593,19 +663,32 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     if (keep) raf = win.requestAnimationFrame(tick); else { running = false; hist.length = 0; }
   };
 
-  // ---------- pointer / keyboard ----------
+  // ---------- pointer / touch / touchpad / keyboard ----------
   const axis = () => { if (isPaged()) { const a = angRad(); return [Math.cos(a), Math.sin(a)]; } return [1, 0]; };
   const rubber = (p) => {
     if (isCyc() || eff.layout === 'marquee') return p;
     if (p < 0) return p * 0.35; if (p > n - 1) return n - 1 + (p - (n - 1)) * 0.35; return p;
   };
+  /** Shared release logic for drags, swipes and touchpad scrubs: momentum, then snap to a slide. */
+  const settle = (v, startPos) => {
+    const mom = eff.fx.momentum ? eff.fx.inertia / 50 : 0, startRound = Math.round(startPos);
+    if (eff.layout === 'spatial' && !eff.spatial.snap) { vel = v * mom; gliding = true; wake(); return; }
+    let t = Math.round(pos + v * 0.22 * mom); const moved = pos - startPos;
+    if (t === startRound && Math.abs(moved) > 0.12) t = startRound + (moved > 0 ? 1 : -1);
+    if (isPaged()) t = clamp(t, startRound - 1, startRound + 1);
+    if (!isCyc()) t = loopOK() ? mod(t, n) : clamp(t, 0, n - 1);
+    moveTo(t, 'user', v);
+  };
   const onDown = (e) => {
-    if (!eff.nav.drag || (e.button != null && e.button > 0) || n < 2) return;
+    if ((e.button != null && e.button > 0) || n < 2) return;
+    // Mouse and touch/pen are separate switches; pens behave like fingers.
+    if (e.pointerType === 'mouse' ? !mouseOn() : !touchOn()) return;
     if (e.target.closest && e.target.closest('.mf-nav,.mf-arrow,.mf-play,.mf-thumb,.mf-dot')) return;
+    if (scrubbing) endScrub();
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, ox: e.clientX, oy: e.clientY, lx: e.clientX, startPos: pos, samples: [], type: e.pointerType, started: false };
   };
   const onMove = (e) => {
-    if (eff.layout === 'spatial' && e.pointerType === 'mouse' && eff.spatial.mouseTilt > 0) {
+    if (eff.layout === 'spatial' && e.pointerType === 'mouse' && (eff.spatial.mouseTilt > 0 || eff.spatial.mouseDepth > 0)) {
       const r = root.getBoundingClientRect();
       tiltTX = clamp(((e.clientX - r.left) / Math.max(1, r.width)) * 2 - 1, -1, 1); tiltTY = clamp(((e.clientY - r.top) / Math.max(1, r.height)) * 2 - 1, -1, 1); wake();
     }
@@ -617,7 +700,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
       try { root.setPointerCapture(e.pointerId); } catch (_) {}
       root.classList.add('is-dragging'); autoT = 0;
     }
-    const proj = (e.clientX - ptr.ox) * ax[0] + (e.clientY - ptr.oy) * ax[1], sens = eff.nav.sensitivity / 100;
+    const proj = (e.clientX - ptr.ox) * ax[0] + (e.clientY - ptr.oy) * ax[1], sens = (eff.nav.sensitivity / 100) * (eff.nav.invert ? -1 : 1);
     if (eff.layout === 'marquee') { mx -= (e.clientX - ptr.lx) * sens; ptr.lx = e.clientX; }
     else { pos = rubber(ptr.startPos - (proj / geo.pitch) * sens); target = pos; moveDir = pos >= (ptr.samples.length ? ptr.samples[ptr.samples.length - 1].p : ptr.startPos) ? 1 : -1; }
     const t = nowMs(); ptr.samples.push({ t, p: pos }); while (ptr.samples.length > 2 && t - ptr.samples[0].t > 120) ptr.samples.shift();
@@ -634,13 +717,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     if (eff.layout === 'marquee') { wake(); return; }
     let v = 0; const s = p.samples;
     if (s.length > 1) { const A = s[0], B = s[s.length - 1]; v = (B.p - A.p) / Math.max(0.016, (B.t - A.t) / 1000); }
-    const mom = eff.fx.momentum ? eff.fx.inertia / 50 : 0, startRound = Math.round(p.startPos);
-    if (eff.layout === 'spatial' && !eff.spatial.snap) { vel = v * mom; gliding = true; wake(); return; }
-    let t = Math.round(pos + v * 0.22 * mom); const moved = pos - p.startPos;
-    if (t === startRound && Math.abs(moved) > 0.12) t = startRound + (moved > 0 ? 1 : -1);
-    if (isPaged()) t = clamp(t, startRound - 1, startRound + 1);
-    if (!isCyc()) t = loopOK() ? mod(t, n) : clamp(t, 0, n - 1);
-    moveTo(t, 'user', v);
+    settle(v, p.startPos);
   };
   const onEnter = (e) => { if (e.pointerType === 'mouse') hovered = true; };
   const onLeave = () => { hovered = false; tiltTX = 0; tiltTY = 0; wake(); };
@@ -651,12 +728,46 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     if (f) { e.preventDefault(); step(f, 'user'); }
     else if (k === 'Home') { e.preventDefault(); goTo(0); } else if (k === 'End') { e.preventDefault(); goTo(n - 1); }
   };
+  const endScrub = () => {
+    wheelTimer = 0;
+    if (!scrubbing) return;
+    scrubbing = false;
+    restUntil = nowMs() + 1200;
+    if (eff.layout === 'marquee') { wake(); return; }
+    let v = 0; const s = wheelSamples;
+    if (s.length > 1) { const A = s[0], B = s[s.length - 1]; v = (B.p - A.p) / Math.max(0.016, (B.t - A.t) / 1000); }
+    wheelSamples = [];
+    settle(v, wheelStart);
+  };
   const onWheel = (e) => {
-    if (!eff.nav.wheel || n < 2) return;
-    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (Math.abs(d) < 12) return;
+    const nv = eff.nav;
+    if (!nv.wheel || n < 2) return;
+    let dx = e.deltaX, dy = e.deltaY;
+    if (e.deltaMode === 1) { dx *= 16; dy *= 16; } else if (e.deltaMode === 2) { dx *= W; dy *= H; }
+    const inv = nv.invert ? -1 : 1;
+    if ((nv.wheelMode || 'scroll') === 'scroll') {
+      // Mouse wheel: one slide per notch, and the wheel belongs to the carousel while it is over it.
+      const d = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+      if (Math.abs(d) < 12) return;
+      e.preventDefault();
+      const t = nowMs(); if (t - lastWheel < 500) return; lastWheel = t; step((d > 0 ? 1 : -1) * inv, 'user');
+      return;
+    }
+    // Touchpad swipe: follow the finger smoothly along the carousel's axis, then snap on release.
+    // Movement across the axis is left alone so the page can still scroll (Shift + wheel also scrubs).
+    const ax = axis(), horiz = Math.abs(ax[0]) >= Math.abs(ax[1]);
+    const d = horiz ? dx : dy, cross = horiz ? dy : dx;
+    if (!d || Math.abs(d) < Math.abs(cross)) return;
     e.preventDefault();
-    const t = nowMs(); if (t - lastWheel < 500) return; lastWheel = t; step(d > 0 ? 1 : -1, 'user');
+    const sens = (nv.sensitivity / 100) * inv;
+    if (!scrubbing) {
+      scrubbing = true; anim = null; springOn = false; gliding = false; wheelSamples = []; wheelStart = pos; autoT = 0;
+    }
+    if (eff.layout === 'marquee') mx += d * sens;
+    else { pos = rubber(pos + (d / geo.pitch) * sens); target = pos; moveDir = d * sens > 0 ? 1 : -1; }
+    const t = nowMs(); wheelSamples.push({ t, p: pos }); while (wheelSamples.length > 2 && t - wheelSamples[0].t > 120) wheelSamples.shift();
+    dirty = true; wake();
+    win.clearTimeout(wheelTimer); wheelTimer = win.setTimeout(endScrub, 140);
   };
 
   root.addEventListener('pointerdown', onDown);
@@ -676,7 +787,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
   };
   const ro = win.ResizeObserver ? new win.ResizeObserver(measure) : null; if (ro) ro.observe(root);
   const io = win.IntersectionObserver ? new win.IntersectionObserver((es) => { inView = es[es.length - 1].isIntersecting; if (inView) { dirty = true; wake(); } }) : null; if (io) io.observe(root);
-  const mq = win.matchMedia ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const mq = hooks.forceMotion !== true && win.matchMedia ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
   const onMq = () => { reduce = !!mq.matches; if (reduce) setPlaying(false, true); wake(); };
   if (mq) { reduce = !!mq.matches; if (mq.addEventListener) mq.addEventListener('change', onMq); }
   if (reduce) playing = false;
@@ -700,7 +811,7 @@ export function createCarousel(root: HTMLElement, initial: any, hooks?: any): an
     setPlaying: (v) => setPlaying(!!v, false),
     getIndex: () => cur(),
     destroy() {
-      destroyed = true; if (raf) win.cancelAnimationFrame(raf);
+      destroyed = true; if (raf) win.cancelAnimationFrame(raf); if (wheelTimer) win.clearTimeout(wheelTimer);
       root.removeEventListener('pointerdown', onDown); root.removeEventListener('pointermove', onMove); root.removeEventListener('pointerup', onUp);
       root.removeEventListener('pointercancel', onUp); root.removeEventListener('pointerenter', onEnter); root.removeEventListener('pointerleave', onLeave);
       root.removeEventListener('click', onClickCapture, true); root.removeEventListener('keydown', onKey); root.removeEventListener('wheel', onWheel);

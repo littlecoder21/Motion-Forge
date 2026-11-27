@@ -2,7 +2,9 @@ import { useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { ChevronDown, ChevronUp, Copy, Plus, RotateCcw, Trash2, Upload, X } from 'lucide-react';
 import type { Project, Slide } from '@/lib/model';
+import { SAMPLES, sampleUrl } from '@/lib/samples';
 import { Segment } from './controls';
+import '@/studio-v3.css';
 
 export type SlideApi = {
   project: Project; activeSlide: Slide;
@@ -66,6 +68,11 @@ export function SlideEditor({ api }: { api: SlideApi }) {
       <label className="field-label color-field"><span className="ctl-label">Background color</span><span className="color-input"><input type="color" value={s.color} onChange={(e) => api.patchSlide('color', e.target.value)} aria-label="Background color" /><span>{s.color}</span></span></label>
       <div className="swatches">{SWATCHES.map((c) => <button type="button" key={c} title={`Set background ${c}`} aria-label={`Set background ${c}`} style={{ background: c }} onClick={() => api.patchSlide('color', c)} />)}</div>
       <label className="field-label color-field"><span className="ctl-label">Accent color</span><span className="color-input"><input type="color" value={s.accent} onChange={(e) => api.patchSlide('accent', e.target.value)} aria-label="Accent color" /><span>{s.accent}</span></span></label>
+    </section>
+    <section className="inspector-section"><div className="section-row"><span>FREE SAMPLE IMAGES</span></div>
+      <div className="sample-grid" role="list">{SAMPLES.map((x) => <button type="button" role="listitem" key={x.id} className={s.image === sampleUrl(x.id) ? 'picked' : ''} title={x.label} aria-label={`Use sample image: ${x.label}`}
+        style={{ backgroundColor: x.color, backgroundImage: `url(${sampleUrl(x.id, 160, 120)})` }} onClick={() => api.patchSlide('image', sampleUrl(x.id))} />)}</div>
+      <small className="sample-credit">Hot-linked from Lorem Picsum — free Unsplash photography. Swap in your own any time.</small>
     </section>
     <section className="inspector-section"><div className="section-row"><span>TEXT LAYOUT (THIS SLIDE)</span></div>
       <Segment label="Alignment" value={s.align ?? ''} options={[{ value: '', label: 'Default' }, { value: 'start', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'end', label: 'Right' }]} onChange={(v) => api.patchSlide('align', String(v))} />

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowLeft, ChevronRight, Download, Eye, Maximize2, Pause, Play, Redo2, Settings2, Undo2 } from 'lucide-react';
 import { CATEGORIES, type Sub } from '@/lib/schema';
+import { CarouselThemes } from '../CarouselThemes';
 import { Preview } from '../Preview';
 import { ControlList } from '../controls';
 import { PresetLibrary } from '../PresetLibrary';
@@ -58,6 +59,7 @@ export function MobileEditor({ api, shell }: { api: EditorApi; shell: Shell }) {
   const renderSub = (s: Sub) => {
     if (s.custom === 'slides') return <><SlideList api={api.slides} touch /><SlideEditor api={api.slides} /></>;
     if (s.custom === 'presets') return <PresetLibrary project={project} onApply={api.applyPreset} notify={api.notify} touch />;
+    if (s.custom === 'themes') return <CarouselThemes project={project} onApply={(next) => api.apply(() => next)} />;
     return s.controls ? <ControlList controls={s.controls} project={project} onChange={api.set} onApply={api.apply} /> : null;
   };
 

@@ -20,7 +20,7 @@ export type Ctl =
   | (Base & { kind: 'curve' })
   | (Base & { kind: 'actions'; label: string; items: { label: string; apply: (p: Project) => Project }[] })
   | (Base & { kind: 'note'; text: string });
-export type Sub = { id: string; label: string; nested?: boolean; summary?: (p: Project) => string; controls?: Ctl[]; custom?: 'slides' | 'presets' };
+export type Sub = { id: string; label: string; nested?: boolean; summary?: (p: Project) => string; controls?: Ctl[]; custom?: 'slides' | 'presets' | 'themes' };
 export type Cat = { id: string; label: string; icon: LucideIcon; subs: Sub[] };
 
 export const LAYOUT_META: { id: Layout; label: string; descriptor: string }[] = [
@@ -30,7 +30,7 @@ export const LAYOUT_META: { id: Layout; label: string; descriptor: string }[] = 
   { id: 'vertical', label: 'Vertical', descriptor: 'Up and down motion' }, { id: 'marquee', label: 'Marquee', descriptor: 'Continuous loop' },
   { id: 'spotlight', label: 'Spotlight', descriptor: 'Lit focus, soft edges' }, { id: 'accordion', label: 'Accordion', descriptor: 'Panels that expand' },
   { id: 'fan', label: 'Fan', descriptor: 'Hand-of-cards arc' }, { id: 'wheel', label: 'Wheel', descriptor: 'Circular gallery' },
-  { id: 'deck', label: 'Infinite deck', descriptor: 'Swipe cards away' }, { id: 'spatial', label: 'Spatial 3D', descriptor: 'Rings, helixes, spheres' },
+  { id: 'deck', label: 'Infinite deck', descriptor: 'Swipe cards away' }, { id: 'spatial', label: 'Spatial 3D', descriptor: 'Rings, tunnels, cascades' },
 ];
 export const MOTION_META: { id: Motion; label: string; descriptor: string }[] = [
   { id: 'slide', label: 'Slide', descriptor: 'Directional travel' }, { id: 'fade', label: 'Fade', descriptor: 'Clean crossfade' }, { id: 'zoom', label: 'Zoom', descriptor: 'Scale and fade' },
@@ -44,6 +44,12 @@ export const FORMATION_META: { id: Formation; label: string; descriptor: string 
   { id: 'ring', label: 'Ring', descriptor: 'Circular carousel' }, { id: 'cylinder', label: 'Cylinder', descriptor: 'Edge-to-edge panels' }, { id: 'helix', label: 'Helix', descriptor: 'Climbing spiral' },
   { id: 'spiral', label: 'Spiral', descriptor: 'Inward spiral' }, { id: 'tunnel', label: 'Tunnel', descriptor: 'Receding depth' }, { id: 'wave', label: 'Wave', descriptor: 'Rolling sine wave' },
   { id: 'orbit', label: 'Orbit', descriptor: 'Tilted halo' }, { id: 'sphere', label: 'Sphere', descriptor: 'Globe of cards (8+)' }, { id: 'multi', label: 'Multi-orbit', descriptor: 'Two staggered rings' },
+  { id: 'cascade', label: 'Cascade', descriptor: 'Receding staircase' }, { id: 'isometric', label: 'Isometric', descriptor: 'Parallel plates' }, { id: 'arc', label: 'Arc wheel', descriptor: 'Horseshoe of cards' },
+  { id: 'vortex', label: 'Vortex', descriptor: 'Tiled wormhole (16+)' },
+];
+export const CARD_STYLE_OPTS: Opt[] = [
+  { value: 'classic', label: 'Classic', note: 'Full-bleed photo card' }, { value: 'frame', label: 'Framed print', note: 'White border all around' },
+  { value: 'polaroid', label: 'Polaroid', note: 'Thick bottom, caption strip' }, { value: 'glass', label: 'Frosted glass', note: 'Translucent mat' }, { value: 'glow', label: 'Neon edge', note: 'Glowing outline' },
 ];
 export const EASING_OPTS: Opt[] = ['Ease out', 'Ease in out', 'Linear', 'Spring', 'Back', 'Expo out', 'Quart in out', 'Circ out', 'Custom'].map((v) => ({ value: v, label: v }));
 
@@ -56,7 +62,7 @@ const notSpatial: Gate = (p) => p.layout !== 'spatial';
 const isFormation = (...f: Formation[]): Gate => (p) => p.layout === 'spatial' && f.includes(p.spatial.formation);
 const usesCardW: Gate = (p) => (['centered', 'coverflow', 'stack', 'spotlight', 'fan', 'wheel', 'deck', 'accordion'] as Layout[]).includes(p.layout);
 const usesCardH: Gate = (p) => !isPaged(p.layout) && p.layout !== 'spatial';
-const usesGap: Gate = (p) => (['multi', 'centered', 'accordion', 'marquee'] as Layout[]).includes(p.layout) || (p.layout === 'spatial' && p.spatial.formation === 'cylinder');
+const usesGap: Gate = (p) => (['multi', 'centered', 'accordion', 'marquee', 'coverflow'] as Layout[]).includes(p.layout) || (p.layout === 'spatial' && p.spatial.formation === 'cylinder');
 const usesSpring: Gate = (p) => p.layout !== 'marquee' && (p.fx.spring || (isPaged(p.layout) && p.motion === 'elastic'));
 const tweenTiming: Gate = (p) => p.layout !== 'marquee' && !usesSpring(p);
 const usesIntensity: Gate = (p) => {
@@ -66,6 +72,10 @@ const usesIntensity: Gate = (p) => {
 const usesDepth: Gate = (p) => p.layout === 'coverflow' || (isPaged(p.layout) && (p.motion === 'depthpush' || p.motionOut === 'depthpush'));
 const usesBlur: Gate = (p) => p.layout === 'spotlight' || (isPaged(p.layout) && (p.motion === 'blur' || p.motionOut === 'blur'));
 const autoRotating: Gate = (p) => p.layout === 'spatial' && p.spatial.autoRotate;
+/** Any way of moving the slides by hand is on. */
+const anyInput: Gate = (p) => p.nav.drag || p.nav.touch || p.nav.wheel;
+/** Cards are mats / frames only for the styles that draw them. */
+const framed: Gate = (p) => p.look.cardStyle === 'frame' || p.look.cardStyle === 'polaroid';
 
 const patchSpatial = (patch: Partial<Project['spatial']>) => (p: Project): Project => ({ ...p, spatial: { ...p.spatial, ...patch } });
 const range = (key: string, label: string, min: number, max: number, extra: Partial<Extract<Ctl, { kind: 'range' }>> = {}): Ctl => ({ kind: 'range', key, label, min, max, ...extra });
@@ -94,12 +104,21 @@ export const CATEGORIES: Cat[] = [
         { kind: 'note', text: 'Spatial 3D card size and spacing live in the 3D tab.', show: spatial },
       ] },
       { id: 'navigation', label: 'Navigation', controls: [
-        toggle('nav.arrows', 'Arrow buttons'),
-        { kind: 'segment', key: 'nav.pagination', label: 'Pagination', options: [{ value: 'dots', label: 'Bars' }, { value: 'fraction', label: '01 / 04' }, { value: 'none', label: 'None' }] },
+        toggle('nav.arrows', 'Previous / next buttons', { hint: 'Turn off to hide both arrow buttons.' }),
+        { kind: 'segment', key: 'nav.arrowStyle', label: 'Arrow style', show: (p) => p.nav.arrows, options: [{ value: 'round', label: 'Round' }, { value: 'square', label: 'Square' }, { value: 'minimal', label: 'Minimal' }] },
+        { kind: 'segment', key: 'nav.pagination', label: 'Pagination', options: [{ value: 'dots', label: 'Bars' }, { value: 'fraction', label: '01 / 04' }, { value: 'none', label: 'Off' }], hint: 'Choose Off to hide the navigation dashes.' },
+        { kind: 'segment', key: 'nav.paginationStyle', label: 'Dash style', show: (p) => p.nav.pagination === 'dots' && !p.nav.thumbs, options: [{ value: 'bar', label: 'Bars' }, { value: 'dot', label: 'Dots' }, { value: 'line', label: 'Lines' }] },
         { kind: 'segment', key: 'nav.position', label: 'Controls position', options: [{ value: 'bottom', label: 'Split' }, { value: 'center', label: 'Center' }, { value: 'sides', label: 'Sides' }] },
-        toggle('nav.thumbs', 'Thumbnail strip'), toggle('nav.progress', 'Progress bar'),
-        toggle('nav.drag', 'Drag / swipe'), range('nav.sensitivity', 'Swipe sensitivity', 40, 250, { unit: '%', show: (p) => p.nav.drag }),
-        toggle('nav.keyboard', 'Keyboard arrows'), toggle('nav.wheel', 'Mouse wheel / trackpad'),
+        toggle('nav.thumbs', 'Thumbnail strip'), toggle('nav.progress', 'Progress bar'), toggle('nav.keyboard', 'Keyboard arrows'),
+      ] },
+      { id: 'input', label: 'Touch & drag', controls: [
+        toggle('nav.drag', 'Mouse drag', { hint: 'Click and drag with a mouse or trackpad button.' }),
+        toggle('nav.touch', 'Touch swipe', { hint: 'Swipe with a finger or pen on phones and tablets.' }),
+        toggle('nav.wheel', 'Touchpad & wheel'),
+        { kind: 'segment', key: 'nav.wheelMode', label: 'Wheel behaviour', show: (p) => p.nav.wheel, options: [{ value: 'swipe', label: 'Touchpad swipe' }, { value: 'scroll', label: 'Step per notch' }],
+          hint: (p) => (p.nav.wheelMode === 'swipe' ? 'Two-finger swipes scrub smoothly and snap on release. Vertical page scrolling is left alone; Shift + wheel also works.' : 'Every wheel notch moves one slide and captures page scroll while the pointer is over the carousel.') },
+        range('nav.sensitivity', 'Sensitivity', 40, 250, { unit: '%', show: anyInput }),
+        toggle('nav.invert', 'Reverse direction', { show: anyInput }),
       ] },
     ],
   },
@@ -133,8 +152,8 @@ export const CATEGORIES: Cat[] = [
       { id: 'dynamics', label: 'Dynamics', controls: [
         toggle('fx.spring', 'Spring physics', { show: (p) => p.layout !== 'marquee' }),
         range('fx.stiffness', 'Stiffness', 40, 600, { show: usesSpring }), range('fx.damping', 'Damping', 4, 60, { show: usesSpring, hint: 'Lower damping = more bounce.' }),
-        toggle('fx.momentum', 'Momentum on release', { show: (p) => p.nav.drag && p.layout !== 'marquee' }),
-        range('fx.inertia', 'Inertia', 0, 100, { unit: '%', show: (p) => p.nav.drag && p.fx.momentum && p.layout !== 'marquee' }),
+        toggle('fx.momentum', 'Momentum on release', { show: (p) => anyInput(p) && p.layout !== 'marquee' }),
+        range('fx.inertia', 'Inertia', 0, 100, { unit: '%', show: (p) => anyInput(p) && p.fx.momentum && p.layout !== 'marquee' }),
       ] },
       { id: 'advanced', label: 'Advanced', controls: [
         range('fx.intensity', 'Intensity', 0, 200, { unit: '%', show: usesIntensity, hint: 'Scales rotation, scale and travel effects.' }),
@@ -146,7 +165,12 @@ export const CATEGORIES: Cat[] = [
   },
   {
     id: 'style', label: 'Style', icon: Palette, subs: [
+      { id: 'themes', label: 'Themes', custom: 'themes' },
       { id: 'cards', label: 'Cards', controls: [
+        { kind: 'select', key: 'look.cardStyle', label: 'Card style', options: CARD_STYLE_OPTS },
+        range('look.frame', 'Frame width', 0, 12, { unit: '%', show: framed, hint: 'Border thickness as a share of card width.' }),
+        range('look.glow', 'Edge glow', 0, 100, { unit: '%', show: (p) => p.look.cardStyle === 'glow' }),
+        range('look.reflect', 'Floor reflection', 0, 100, { unit: '%', hint: 'Mirrors each card below it. Shown in Chrome, Edge and Safari.' }),
         range('look.radius', 'Corner radius', 0, 48, { unit: 'px' }), range('look.shadow', 'Shadow', 0, 100, { unit: '%' }),
         toggle('look.border', 'Hairline border'), toggle('look.sheen', 'Glass sheen'), { kind: 'color', key: 'look.stage', label: 'Stage background' },
       ] },
@@ -176,28 +200,36 @@ export const CATEGORIES: Cat[] = [
           { label: 'Dramatic', apply: patchSpatial({ pitch: -18, activeScale: 125, depthFade: 70, lighting: 60, perspective: 900 }) }, { label: 'Gallery', apply: patchSpatial({ radius: 52, cardW: 28, spacing: 34, pitch: 0, depthFade: 45 }) },
         ] },
         { kind: 'note', text: 'Cylinder and Sphere look best with 6–8+ slides.', show: isFormation('cylinder', 'sphere') },
+        { kind: 'note', text: 'Vortex, Cascade, Arc wheel and Isometric look best with 12+ slides — presets add sample slides for you.', show: isFormation('vortex', 'cascade', 'arc', 'isometric') },
       ] },
       { id: 'geometry', label: 'Geometry', controls: [
         gateNot3D,
-        range('spatial.radius', 'Radius', 10, 90, { unit: '%', show: isFormation('ring', 'helix', 'spiral', 'orbit', 'sphere', 'multi', 'tunnel', 'wave') }),
-        range('spatial.vRadius', 'Vertical radius', 0, 60, { unit: '%', show: isFormation('orbit') }),
-        range('spatial.cardW', 'Card width', 12, 70, { unit: '%', show: spatial }), range('spatial.cardH', 'Card height', 20, 90, { unit: '%', show: spatial }),
-        range('spatial.spacing', 'Angular spacing', 0, 120, { unit: '°', fmt: (v) => (v === 0 ? 'Auto' : `${v}°`), show: isFormation('ring', 'helix', 'spiral', 'orbit', 'multi'), hint: 'Auto spreads every slide around the full circle.' }),
+        range('spatial.radius', 'Radius', 10, 90, { unit: '%', show: isFormation('ring', 'helix', 'spiral', 'orbit', 'sphere', 'multi', 'tunnel', 'wave', 'arc', 'vortex') }),
+        range('spatial.vRadius', 'Vertical radius', 0, 60, { unit: '%', show: isFormation('orbit', 'arc') }),
+        range('spatial.cardW', 'Card width', 6, 70, { unit: '%', show: spatial }), range('spatial.cardH', 'Card height', 10, 90, { unit: '%', show: spatial }),
+        range('spatial.spacing', 'Angular spacing', 0, 120, { unit: '°', fmt: (v) => (v === 0 ? 'Auto' : `${v}°`), show: isFormation('ring', 'helix', 'spiral', 'orbit', 'multi', 'arc', 'vortex'), hint: 'Auto spreads every slide around the full circle.' }),
+        range('spatial.spacing', 'Step spacing', 0, 120, { unit: '%', show: isFormation('cascade', 'isometric'), hint: 'Horizontal step between cards, as a share of card width.' }),
         range('spatial.elevation', 'Height offset', -40, 40, { unit: '%', show: spatial }),
         range('spatial.rise', 'Rise per slide', -40, 40, { unit: '%', show: isFormation('helix', 'spiral') }),
+        range('spatial.rise', 'Step height', -40, 40, { unit: '%', show: isFormation('cascade', 'isometric'), hint: 'Vertical step between cards.' }),
+        range('spatial.depthStep', 'Depth step', 0, 60, { unit: '%', show: isFormation('cascade', 'vortex'), hint: 'How far each card sits behind the last, as a share of card width.' }),
         range('spatial.amplitude', 'Wave amplitude', 0, 40, { unit: '%', show: isFormation('wave') }),
         range('spatial.twist', 'Twist per slide', -60, 60, { unit: '°', show: isFormation('tunnel') }),
+        range('spatial.cardYaw', 'Card turn', -85, 85, { unit: '°', show: spatial, hint: 'Extra turn on every card — slanted plates, skewed tiles.' }),
+        range('spatial.cardPitch', 'Card tip', -85, 85, { unit: '°', show: spatial }),
         range('gap', 'Panel gap', 0, 48, { unit: 'px', show: isFormation('cylinder') }),
       ] },
       { id: 'camera', label: 'Camera', nested: true, summary: (p) => (p.layout === 'spatial' ? `${p.spatial.perspective}px · ${p.spatial.pitch}°` : 'Off'), controls: [
         gateNot3D,
         range('spatial.perspective', 'Perspective', 300, 3000, { step: 50, unit: 'px', show: spatial }), range('spatial.distance', 'Camera distance', -800, 800, { step: 10, unit: 'px', show: spatial }),
         range('spatial.pitch', 'Tilt (pitch)', -75, 75, { unit: '°', show: spatial }), range('spatial.yaw', 'Turn (yaw)', -180, 180, { unit: '°', show: spatial }), range('spatial.roll', 'Roll', -45, 45, { unit: '°', show: spatial }),
-        range('spatial.mouseTilt', 'Mouse parallax', 0, 30, { unit: '°', show: spatial }),
+        range('spatial.mouseTilt', 'Pointer tilt', 0, 30, { unit: '°', show: spatial, hint: 'Set to 0° to disable pointer-driven camera tilt.' }),
+        range('spatial.mouseDepth', 'Pointer depth', 0, 200, { unit: 'px', show: spatial, hint: 'Adds pointer-linked depth parallax to the 3D cards. Set to 0 to disable.' }),
       ] },
       { id: 'rotation', label: 'Rotation', controls: [
         gateNot3D,
-        { kind: 'segment', key: 'spatial.facing', label: 'Card facing', show: isFormation('ring', 'cylinder', 'helix', 'spiral', 'orbit', 'multi'), options: [{ value: 'out', label: 'Outward' }, { value: 'in', label: 'Inward' }, { value: 'front', label: 'Always front' }] },
+        { kind: 'segment', key: 'spatial.facing', label: 'Card facing', show: isFormation('ring', 'cylinder', 'helix', 'spiral', 'orbit', 'multi', 'arc'), options: [{ value: 'out', label: 'Outward' }, { value: 'in', label: 'Inside view' }, { value: 'front', label: 'Always front' }],
+          hint: 'Inside view puts the camera in the ring: a concave, curved-screen panorama.' },
         range('nav.sensitivity', 'Rotation sensitivity', 40, 250, { unit: '%', show: spatial }),
         toggle('spatial.snap', 'Snap to slide', { show: spatial }), toggle('fx.momentum', 'Momentum', { show: spatial }), range('fx.inertia', 'Inertia', 0, 100, { unit: '%', show: (p) => p.layout === 'spatial' && p.fx.momentum }),
       ] },
@@ -207,7 +239,9 @@ export const CATEGORIES: Cat[] = [
         range('spatial.lighting', 'Depth shading', 0, 90, { unit: '%', show: spatial }), range('spatial.activeScale', 'Active scale', 90, 170, { unit: '%', show: spatial }), range('spatial.activeLift', 'Active lift', 0, 300, { unit: 'px', show: spatial }),
       ] },
       { id: 'interaction', label: 'Interaction', controls: [
-        gateNot3D, toggle('spatial.clickFocus', 'Click a card to focus', { show: spatial }), toggle('nav.drag', 'Drag to rotate', { show: spatial }), toggle('spatial.pauseHover', 'Pause on hover', { show: autoRotating }),
+        gateNot3D, toggle('spatial.clickFocus', 'Click a card to focus', { show: spatial }),
+        toggle('nav.drag', 'Mouse drag to rotate', { show: spatial }), toggle('nav.touch', 'Touch swipe to rotate', { show: spatial }), toggle('nav.wheel', 'Touchpad & wheel', { show: spatial }),
+        toggle('spatial.pauseHover', 'Pause on hover', { show: autoRotating }),
       ] },
       { id: 'animation', label: 'Animation', controls: [
         gateNot3D, toggle('spatial.autoRotate', 'Auto-rotate', { show: spatial }), range('spatial.speed', 'Rotation speed', 2, 120, { unit: '°/s', show: autoRotating }), toggle('spatial.reverse', 'Reverse', { show: autoRotating }),

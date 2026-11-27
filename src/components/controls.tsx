@@ -48,7 +48,8 @@ export function ChoiceGrid({ label, family, value, options, onChange }: { label:
 }
 
 export function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return <label className="field-label color-field"><span className="ctl-label">{label}</span><span className="color-input"><input type="color" value={/^#[0-9a-f]{6}$/i.test(value) ? value : '#222d34'} onChange={(e) => onChange(e.target.value)} aria-label={label} /><span>{value}</span></span></label>;
+  const isColor = /^#[0-9a-f]{6}$/i.test(value);
+  return <label className="field-label color-field"><span className="ctl-label">{label}</span><span className="color-input"><input type="color" value={isColor ? value : '#222d34'} onChange={(e) => onChange(e.target.value)} aria-label={label} /><span title={value}>{isColor ? value : 'Gradient'}</span></span></label>;
 }
 
 const PAD: { a: number; g: string; t: string }[] = [

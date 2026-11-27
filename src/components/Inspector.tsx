@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Type } from 'lucide-react';
 import { CATEGORIES } from '@/lib/schema';
+import { CarouselThemes } from './CarouselThemes';
 import { ControlList } from './controls';
 import { SlideEditor } from './SlideEditor';
 import type { EditorApi } from './editor-types';
@@ -24,6 +25,7 @@ export function Inspector({ api }: { api: EditorApi }) {
         const key = `${current.id}.${s.id}`, isClosed = !!closed[key];
         return <section className="inspector-section collapsible" key={key}>
           <button type="button" className="collapse-head" aria-expanded={!isClosed} onClick={() => setClosed((c) => ({ ...c, [key]: !c[key] }))}><span>{s.label.toUpperCase()}</span>{s.summary ? <em>{s.summary(api.project)}</em> : null}{isClosed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</button>
+          {!isClosed && s.custom === 'themes' && <CarouselThemes project={api.project} onApply={(next) => api.apply(() => next)} />}
           {!isClosed && s.controls && <ControlList controls={s.controls} project={api.project} onChange={api.set} onApply={api.apply} />}
         </section>;
       })}

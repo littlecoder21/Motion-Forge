@@ -1,0 +1,12 @@
+/* Preset thumbnails, sample-image picker and preset category counts. */
+.preset-preview.has-glyph{display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.92)}
+.preset-preview.has-glyph .glyph{width:40px;height:28px;display:block;opacity:.95;filter:drop-shadow(0 1px 0 rgba(0,0,0,.18))}
+.category-list button .cat-count{font-style:normal;font-size:.62rem;margin-left:6px;opacity:.55;font-variant-numeric:tabular-nums}
+.category-list button.picked .cat-count{opacity:.85}
+.sample-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:2px}
+.sample-grid button{aspect-ratio:4/3;border-radius:7px;border:1px solid rgba(255,255,255,.14);background-size:cover;background-position:center;padding:0;cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.sample-grid button:hover{transform:translateY(-1px) scale(1.04);border-color:rgba(255,255,255,.5)}
+.sample-grid button.picked{border-color:#8fd3b6;box-shadow:0 0 0 2px rgba(143,211,182,.35)}
+.sample-grid button:focus-visible{outline:2px solid #8fd3b6;outline-offset:2px}
+.sample-credit{display:block;margin-top:8px;font-size:.66rem;line-height:1.4;opacity:.55}
+@media (pointer:coarse){.sample-grid{grid-template-columns:repeat(3,1fr);gap:8px}.sample-grid button{border-radius:10px}}

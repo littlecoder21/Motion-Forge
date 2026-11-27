@@ -1,0 +1,16 @@
+.carousel-theme-picker{padding:10px 12px 14px}
+.carousel-theme-picker>p{margin:0 0 10px;color:#929aa8;font-size:10px;line-height:1.5}
+.carousel-theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.carousel-theme{position:relative;min-width:0;padding:6px;border:1px solid #2b303b;border-radius:7px;background:#191d26;color:#dce1e8;text-align:left;transition:border-color .16s,background .16s}
+.carousel-theme:hover{border-color:#52665f;background:#20262c}
+.carousel-theme.selected{border-color:#62dab8;background:#1d2b2b;box-shadow:0 0 0 1px #62dab833}
+.carousel-theme:focus-visible{outline:2px solid #62dab8;outline-offset:2px}
+.carousel-theme-swatch{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border:1px solid #ffffff20;border-radius:4px;overflow:hidden}
+.carousel-theme-swatch b{font-size:21px;line-height:1;font-weight:600;letter-spacing:-.06em;text-shadow:0 1px 5px #0003}
+.carousel-theme-swatch i{width:7px;height:7px;border-radius:50%;box-shadow:0 0 10px currentColor}
+.carousel-theme-copy{display:block;min-width:0;padding:7px 1px 0}
+.carousel-theme-copy strong,.carousel-theme-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.carousel-theme-copy strong{font-size:10px;font-weight:600}
+.carousel-theme-copy small{margin-top:3px;color:#818a99;font-size:8px}
+.carousel-theme-check{position:absolute;right:9px;top:10px;color:#68dfbd;filter:drop-shadow(0 1px 3px #000)}
+@media(max-width:900px){.carousel-theme-picker{padding:10px 8px 14px}.carousel-theme-grid{gap:6px}}
